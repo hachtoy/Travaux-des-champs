@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Travaux des Champs</title>
+<style>
+  :root {
+    --vert:       #2D6A4F;
+    --vert-clair: #52B788;
+    --vert-pale:  #D8F3DC;
+    --terre:      #8B5E3C;
+    --ciel:       #F0F7F4;
+    --texte:      #1C2B22;
+    --gris:       #6B7280;
+    --border:     #C8DDD3;
+    --blanc:      #FFFFFF;
+    --orange:     #E07B39;
+    --rouge:      #C0392B;
+    --safe-top:   env(safe-area-inset-top, 0px);
+    --safe-bot:   env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--ciel);
+    color: var(--texte);
+    font-size: 16px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--vert);
+    padding: calc(var(--safe-top) + 14px) 16px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  header h1 { color: #fff; font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  header .badge {
+    background: var(--orange);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 3px 10px;
+    display: none;
+  }
+  header .badge.visible { display: block; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    background: var(--vert);
+    padding: 0 16px;
+    border-bottom: 2px solid var(--vert-clair);
+  }
+  .tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 0;
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+  }
+  .tab.active { color: #fff; border-bottom-color: var(--vert-clair); }
+
+  /* ── PAGES ── */
+  .page { display: none; padding: 16px 16px calc(var(--safe-bot) + 80px); }
+  .page.active { display: block; }
+
+  /* ── SECTION TITLE ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    color: var(--vert);
+    text-transform: uppercase;
+    margin: 20px 0 8px;
+  }
+  .section-label:first-child { margin-top: 4px; }
+
+  /* ── FORM FIELDS ── */
+  .field { margin-bottom: 10px; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gris);
+    margin-bottom: 4px;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 16px;
+    background: var(--blanc);
+    color: var(--texte);
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--vert-clair); }
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+  .field input[type="number"] { -moz-appearance: textfield; }
+
+  /* Parcelles row */
+  .parcelles-grid { display: flex; gap: 8px; flex-direction: column; }
+
+  /* Surface auto */
+  .surface-auto {
+    background: var(--vert-pale);
+    border-color: var(--vert-clair);
+    color: var(--vert);
+    font-weight: 700;
+  }
+
+  /* ── BOUTON ENREGISTRER ── */
+  .btn-save {
+    width: 100%;
+    padding: 16px;
+    background: var(--vert);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background .15s, transform .1s;
+  }
+  .btn-save:active { transform: scale(0.98); background: var(--vert-clair); }
+  .btn-save.sending { background: var(--gris); }
+
+  /* ── HISTORIQUE ── */
+  .entry-card {
+    background: var(--blanc);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    border-left: 4px solid var(--vert-clair);
+    position: relative;
+  }
+  .entry-card.pending { border-left-color: var(--orange); }
+  .entry-card.synced  { border-left-color: var(--vert-clair); }
+  .entry-card .date   { font-size: 13px; color: var(--gris); font-weight: 600; }
+  .entry-card .title  { font-size: 15px; font-weight: 700; margin: 2px 0 6px; }
+  .entry-card .meta   { font-size: 13px; color: var(--gris); }
+  .entry-card .status {
+    position: absolute;
+    top: 12px; right: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .status.pending { background: #FEF3C7; color: #92400E; }
+  .status.synced  { background: var(--vert-pale); color: var(--vert); }
+
+  /* ── SYNC BAR ── */
+  .sync-bar {
+    background: var(--orange);
+    color: #fff;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    display: none;
+  }
+  .sync-bar.visible { display: flex; }
+  .sync-bar button {
+    background: rgba(255,255,255,0.25);
+    border: none;
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    bottom: calc(var(--safe-bot) + 20px);
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--texte);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 24px;
+    font-size: 14px;
+    font-weight: 600;
+    z-index: 200;
+    transition: transform .3s ease;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--vert); }
+  .toast.error   { background: var(--rouge); }
+
+  /* ── CONFIG ── */
+  .config-field { margin-bottom: 14px; }
+  .config-field label { display: block; font-size: 13px; font-weight: 600; color: var(--gris); margin-bottom: 4px; }
+  .config-field input {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    background: var(--blanc);
+    outline: none;
+  }
+  .config-field input:focus { border-color: var(--vert-clair); }
+  .hint { font-size: 12px; color: var(--gris); margin-top: 4px; line-height: 1.5; }
+  .btn-secondary {
+    width: 100%;
+    padding: 13px;
+    background: var(--blanc);
+    color: var(--vert);
+    border: 2px solid var(--vert);
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  /* ── ACCORDÉONS CONFIG ── */
+  .accord {
+    background: var(--blanc);
+    border-radius: 12px;
+    margin: 8px 0;
+    overflow: hidden;
+    border: 1.5px solid var(--border);
+  }
+  .accord-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--texte);
+    user-select: none;
+  }
+  .accord-header .chevron { transition: transform .2s; font-size: 12px; color: var(--gris); }
+  .accord-header.open .chevron { transform: rotate(180deg); }
+  .accord-body { display: none; padding: 0 12px 12px; }
+  .accord-body.open { display: block; }
+  .accord-add {
+    display: flex; gap: 8px; margin-bottom: 10px;
+  }
+  .accord-add input {
+    flex: 1; padding: 10px 12px;
+    border: 1.5px solid var(--border); border-radius: 10px;
+    font-size: 15px; outline: none;
+  }
+  .accord-add input.surf { flex: 0 0 70px; }
+  .accord-add button {
+    padding: 10px 14px; background: var(--vert); color: #fff;
+    border: none; border-radius: 10px; font-size: 20px; cursor: pointer;
+  }
+  .list-item {
+    display: flex; align-items: center;
+    padding: 9px 10px; border-radius: 8px;
+    margin-bottom: 5px; background: var(--ciel);
+    gap: 8px;
+  }
+  .list-item .nom { flex: 1; font-size: 14px; }
+  .list-item .surf-tag { font-size: 12px; color: var(--vert); font-weight: 700; }
+  .list-item .del { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--rouge); padding: 0 2px; }
+
+  .parc-item {
+    display: flex;
+    align-items: center;
+    background: var(--blanc);
+    border-radius: 10px;
+    padding: 11px 12px;
+    margin-bottom: 7px;
+    border: 1.5px solid var(--border);
+    gap: 8px;
+  }
+  .parc-item .parc-nom { flex: 2; font-size: 14px; font-weight: 600; }
+  .parc-item .parc-surf { flex: 1; font-size: 13px; color: var(--vert); font-weight: 700; }
+  .parc-item .btn-del {
+    background: none; border: none; font-size: 18px;
+    cursor: pointer; color: var(--rouge); padding: 0 4px;
+  }
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--gris);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🌾 Travaux des Champs</h1>
+  <span class="badge" id="pendingBadge">0 en attente</span>
+</header>
+
+<div class="sync-bar" id="syncBar">
+  <span id="syncText">Entrées non synchronisées</span>
+  <button onclick="syncAll()">Synchroniser</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="showPage('saisie', this)">✏️ Saisie</div>
+  <div class="tab" onclick="showPage('historique', this)">📋 Historique</div>
+  <div class="tab" onclick="showPage('config', this)">⚙️ Config</div>
+</div>
+
+<!-- ══════════════ PAGE SAISIE ══════════════ -->
+<div class="page active" id="page-saisie">
+
+  <div class="section-label">📅 Date</div>
+  <div class="field">
+    <input type="date" id="f-date">
+  </div>
+
+  <div class="section-label">🌿 Parcelles</div>
+  <div class="parcelles-grid">
+    <div class="field">
+      <label>Parcelle 1</label>
+      <select id="f-parc1" onchange="calcSurface()"><option value="">— choisir —</option></select>
+    </div>
+    <div class="field">
+      <label>Parcelle 2 (optionnel)</label>
+      <select id="f-parc2" onchange="calcSurface()"><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label>Parcelle 3 (optionnel)</label>
+      <select id="f-parc3" onchange="calcSurface()"><option value="">—</option></select>
+    </div>
+  </div>
+
+  <div class="field">
+    <label>Surface calculée (Ha)</label>
+    <input type="text" id="f-surface" class="surface-auto" readonly placeholder="calculé automatiquement">
+  </div>
+
+  <div class="section-label">🚜 Travaux</div>
+  <div class="field">
+    <label>Culture</label>
+    <select id="f-culture"><option value="">— choisir —</option></select>
+  </div>
+  <div class="field">
+    <label>Intervention</label>
+    <select id="f-intervention"><option value="">— choisir —</option></select>
+  </div>
+  <div class="field">
+    <label>Outil</label>
+    <select id="f-outil"><option value="">— choisir —</option></select>
+  </div>
+  <div class="field">
+    <label>Chauffeur</label>
+    <select id="f-chauffeur"><option value="">— choisir —</option></select>
+  </div>
+
+  <div class="section-label">🌱 Produit / Apport (optionnel)</div>
+  <div class="field">
+    <label>Type d'apport</label>
+    <select id="f-apport"><option value="">—</option></select>
+  </div>
+  <div class="field">
+    <label>Produit / Variété</label>
+    <select id="f-produit"><option value="">—</option></select>
+  </div>
+  <div class="field">
+    <label>Quantité / Ha</label>
+    <input type="number" id="f-qteha" step="0.01" placeholder="0">
+  </div>
+  <div class="field">
+    <label>Unité</label>
+    <select id="f-unite"><option value="">—</option></select>
+  </div>
+
+  <div class="section-label">🌾 Récolte (optionnel)</div>
+  <div class="field">
+    <label>Tonnes récoltées</label>
+    <input type="number" id="f-tonnes" step="0.1" placeholder="0">
+  </div>
+
+  <button class="btn-save" id="btnSave" onclick="enregistrer()">
+    ✅ Enregistrer
+  </button>
+</div>
+
+<!-- ══════════════ PAGE HISTORIQUE ══════════════ -->
+<div class="page" id="page-historique">
+  <div id="historique-list"></div>
+</div>
+
+<!-- ══════════════ PAGE CONFIG ══════════════ -->
+<div class="page" id="page-config">
+
+  <!-- Google Sheets -->
+  <div class="section-label">🔗 Connexion Google Sheets</div>
+  <div class="config-field">
+    <label>URL du script Apps Script</label>
+    <input type="url" id="cfg-url" placeholder="https://script.google.com/macros/s/…/exec">
+    <p class="hint">Colle ici l'URL de déploiement de ton Apps Script.</p>
+  </div>
+  <button class="btn-secondary" onclick="saveConfig()">💾 Enregistrer</button>
+
+  <!-- Accordéons listes -->
+  <div id="accordions"></div>
+
+  <!-- Données locales -->
+  <div class="section-label" style="margin-top:24px">🗑️ Données locales</div>
+  <button class="btn-secondary" style="border-color:var(--rouge);color:var(--rouge)" onclick="clearData()">
+    Effacer l'historique local
+  </button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DONNÉES
+// ══════════════════════════════════════════
+const DATA = {
+  parcelles: ["Etcheaintzina","Lac","Kutch gauche","kutch g luzerne","Charritte chp1","Charritte chp2","Charritte chp3","Charritte chp4","Charritte chp3/4 herbe","Charritte chp5","Ehule","Domezainette","Gilbert","Duro","Elichabid","Minardia","Etchegelan","Pekoldia","Pekoldia foin","Prixint","Ahizar","Avoine Etchegelan","Bazkeia","Bazkeia petite prairie","Bazkeia grande prairie","Berho bazkeia","Berho prairie du fond","Berho Chilindro","Prairie foin","chene","pente gauche","gel","cabane","Hangar","petit carré","Bois","pente coté bois","Borne","Triangle","Gel","pente Esker Ahizar","Esker Ahizar","Prairie maïs","Artchenania","Kutch droit","Diemenborda","Verges"],
+  cultures: ["prairie","maïs","soja","meteils","luzerne","sorgho","teff","Meteils fourragers","couvert vegetal","soja + Niebe","paille","Miscanthus"],
+  interventions: ["preparation sol","semis","desherbage","nettoyage","fertilisation","foin","recolte","Drainer","traitement vers gris"],
+  outils: ["Rotavator","Dynadrive","Disque","rouleau","Épandeur fumier","Épandeur engrais","Charrue","Decompacteur","Herse","Herse etrille","Houe rotative","Bineuse","Cultipaker","Broyeur","Faucheuse","Pirouette","Andaineur","Roundballeur","Quad semoir","Semoir monograine","Semoir agram","Semoir nodet","Batteuse","Combiné herse semoir","Combiné herse cultipaker","Vibro","Pulvé","Dp12","Bourgoin","Autochargeuse","Motofaucheuse","Plateau fourrager","Herse de prairie","Pirouette x2","Pirouette x3","Soussoleuse cuma"],
+  chauffeurs: ["Moi","Claude","Thomas","Clément","Cuma","Suhit","Iratcabal"],
+  apports: ["semences","fertilisation","fumier","protection vegetaux"],
+  produits: ["mélange suisse","p900","Adelfia","Altona","Bacteriosol","10 0 0","wellow teff","9_5_0","Melange mass","STARTER","feverole","Adelfia/Altona","Kieserite","Bore Molybdene","Mélange luzerne trèfle RGA","Sulfate magnésium","Fumier bovin","izzli / DK 5001","Altona / Adelphia","6/10/0","Mezalid","chaux carriere"],
+  unites: ["Tonnes","Kg","Doses","Grains","boules","Litres"],
+  surfaces: {"Etcheaintzina":7.3,"Lac":3.3,"Kutch gauche":1.1,"kutch g luzerne":1.0,"Charritte chp1":1.4,"Charritte chp2":4.0,"Charritte chp3":2.0,"Charritte chp4":2.37,"Charritte chp3/4 herbe":1.0,"Charritte chp5":2.5,"Ehule":3.14,"Domezainette":2.0,"Gilbert":1.8,"Duro":1.88,"Elichabid":2.0,"Minardia":1.8,"Etchegelan":1.6,"Pekoldia":1.5,"Pekoldia foin":2.0,"Prixint":1.21,"Ahizar":1.14,"Avoine Etchegelan":0,"Bazkeia":2.0,"Bazkeia petite prairie":0.8,"Bazkeia grande prairie":1.8,"Berho bazkeia":1.0,"Berho prairie du fond":0.8,"Berho Chilindro":1.35,"Prairie foin":1.5,"chene":3.0,"pente gauche":1.5,"gel":0.48,"cabane":4.6,"Hangar":2.62,"petit carré":0.44,"Bois":1.21,"pente coté bois":0.67,"Borne":1.62,"Triangle":0.76,"Gel":0.64,"pente Esker Ahizar":0.45,"Esker Ahizar":1.5,"Prairie maïs":3.0,"Artchenania":0.5,"Kutch droit":1.3,"Diemenborda":0.7,"Verges":0.7}
+};
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function populate(id, list) {
+  const sel = document.getElementById(id);
+  const first = sel.options[0];
+  sel.innerHTML = '';
+  sel.appendChild(first);
+  list.forEach(v => {
+    const o = document.createElement('option');
+    o.value = o.textContent = v;
+    sel.appendChild(o);
+  });
+}
+
+function init() {
+  // Date = aujourd'hui
+  const today = new Date();
+  document.getElementById('f-date').value = today.toISOString().split('T')[0];
+
+  // Remplir les selects
+  ['f-parc1','f-parc2','f-parc3'].forEach(id => populate(id, DATA.parcelles));
+  populate('f-culture', DATA.cultures);
+  populate('f-intervention', DATA.interventions);
+  populate('f-outil', DATA.outils);
+  populate('f-chauffeur', DATA.chauffeurs);
+  populate('f-apport', DATA.apports);
+  populate('f-produit', DATA.produits);
+  populate('f-unite', DATA.unites);
+
+  // Config
+  const url = localStorage.getItem('gasUrl') || '';
+  document.getElementById('cfg-url').value = url;
+
+  // Charger toutes les listes personnalisées
+  LIST_CONFIG.forEach(cfg => {
+    const saved = localStorage.getItem('list_' + cfg.key);
+    // Migration ancien format parcelles
+    if (cfg.key === 'parcelles' && !saved) {
+      const old = localStorage.getItem('parcelles_custom');
+      if (old) { localStorage.setItem('list_parcelles', old); }
+    }
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (cfg.key === 'parcelles') {
+        DATA.surfaces = data;
+        DATA.parcelles = Object.keys(data);
+      } else {
+        DATA[cfg.key] = Array.isArray(data) ? data : Object.keys(data);
+      }
+    }
+    cfg.selectIds.forEach(id => {
+      const list = cfg.key === 'parcelles' ? DATA.parcelles : DATA[cfg.key];
+      populate(id, list);
+    });
+  });
+
+  buildAccordions();
+  updateSyncBar();
+  renderHistorique();
+}
+
+// ══════════════════════════════════════════
+//  SURFACE AUTO
+// ══════════════════════════════════════════
+function calcSurface() {
+  const p1 = document.getElementById('f-parc1').value;
+  const p2 = document.getElementById('f-parc2').value;
+  const p3 = document.getElementById('f-parc3').value;
+  let total = 0;
+  [p1, p2, p3].forEach(p => { if (p && DATA.surfaces[p]) total += DATA.surfaces[p]; });
+  document.getElementById('f-surface').value = total > 0 ? total.toFixed(2) + ' Ha' : '';
+}
+
+function getSurfaceNum() {
+  const p1 = document.getElementById('f-parc1').value;
+  const p2 = document.getElementById('f-parc2').value;
+  const p3 = document.getElementById('f-parc3').value;
+  let total = 0;
+  [p1, p2, p3].forEach(p => { if (p && DATA.surfaces[p]) total += DATA.surfaces[p]; });
+  return total > 0 ? parseFloat(total.toFixed(2)) : '';
+}
+
+// ══════════════════════════════════════════
+//  ENREGISTRER
+// ══════════════════════════════════════════
+function enregistrer() {
+  const date = document.getElementById('f-date').value;
+  const intervention = document.getElementById('f-intervention').value;
+
+  if (!date) { showToast('⚠️ Renseigne une date !', 'error'); return; }
+  if (!intervention) { showToast('⚠️ Renseigne une intervention !', 'error'); return; }
+
+  const entry = {
+    id: Date.now(),
+    date,
+    parc1: document.getElementById('f-parc1').value,
+    parc2: document.getElementById('f-parc2').value,
+    parc3: document.getElementById('f-parc3').value,
+    surface: getSurfaceNum(),
+    culture: document.getElementById('f-culture').value,
+    intervention,
+    outil: document.getElementById('f-outil').value,
+    chauffeur: document.getElementById('f-chauffeur').value,
+    apport: document.getElementById('f-apport').value,
+    produit: document.getElementById('f-produit').value,
+    qteha: parseFloat(document.getElementById('f-qteha').value) || '',
+    unite: document.getElementById('f-unite').value,
+    tonnes: parseFloat(document.getElementById('f-tonnes').value) || '',
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+
+  // Sauvegarder localement
+  const entries = getEntries();
+  entries.unshift(entry);
+  saveEntries(entries);
+
+  showToast('✅ Enregistré localement !', 'success');
+  resetForm();
+  updateSyncBar();
+  renderHistorique();
+
+  // Tenter sync immédiate si réseau
+  if (navigator.onLine) syncEntry(entry);
+}
+
+// ══════════════════════════════════════════
+//  RESET FORM
+// ══════════════════════════════════════════
+function resetForm() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('f-date').value = today;
+  ['f-parc1','f-parc2','f-parc3','f-culture','f-intervention','f-outil','f-chauffeur','f-apport','f-produit','f-unite'].forEach(id => {
+    document.getElementById(id).selectedIndex = 0;
+  });
+  document.getElementById('f-qteha').value = '';
+  document.getElementById('f-tonnes').value = '';
+  document.getElementById('f-surface').value = '';
+}
+
+// ══════════════════════════════════════════
+//  STOCKAGE LOCAL
+// ══════════════════════════════════════════
+function getEntries() {
+  try { return JSON.parse(localStorage.getItem('travaux') || '[]'); } catch(e) { return []; }
+}
+function saveEntries(entries) {
+  localStorage.setItem('travaux', JSON.stringify(entries));
+}
+
+// ══════════════════════════════════════════
+//  SYNC GOOGLE SHEETS
+// ══════════════════════════════════════════
+function getGasUrl() { return localStorage.getItem('gasUrl') || ''; }
+
+async function syncEntry(entry) {
+  const url = getGasUrl();
+  if (!url) return;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry)
+    });
+
+    // no-cors = on suppose succès si pas d'erreur réseau
+    markSynced(entry.id);
+    updateSyncBar();
+    renderHistorique();
+  } catch(e) {
+    console.log('Sync échouée, sera retentée plus tard');
+  }
+}
+
+async function syncAll() {
+  const url = getGasUrl();
+  if (!url) { showToast('⚠️ Configure l\'URL du script d\'abord !', 'error'); showPage('config'); return; }
+
+  const entries = getEntries().filter(e => e.status === 'pending');
+  if (!entries.length) { showToast('Tout est déjà synchronisé !', 'success'); return; }
+
+  showToast(`Synchronisation de ${entries.length} entrée(s)…`);
+
+  for (const e of entries) {
+    await syncEntry(e);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  showToast('✅ Synchronisation terminée !', 'success');
+}
+
+function markSynced(id) {
+  const entries = getEntries();
+  const idx = entries.findIndex(e => e.id === id);
+  if (idx >= 0) { entries[idx].status = 'synced'; saveEntries(entries); }
+}
+
+// ══════════════════════════════════════════
+//  SYNC BAR & BADGE
+// ══════════════════════════════════════════
+function updateSyncBar() {
+  const pending = getEntries().filter(e => e.status === 'pending').length;
+  const bar = document.getElementById('syncBar');
+  const badge = document.getElementById('pendingBadge');
+  const txt = document.getElementById('syncText');
+
+  if (pending > 0) {
+    bar.classList.add('visible');
+    badge.classList.add('visible');
+    badge.textContent = pending + ' en attente';
+    txt.textContent = pending + ' entrée(s) non synchronisée(s)';
+  } else {
+    bar.classList.remove('visible');
+    badge.classList.remove('visible');
+  }
+}
+
+// ══════════════════════════════════════════
+//  HISTORIQUE
+// ══════════════════════════════════════════
+function renderHistorique() {
+  const list = document.getElementById('historique-list');
+  const entries = getEntries();
+
+  if (!entries.length) {
+    list.innerHTML = `<div class="empty-state"><div class="icon">📋</div><p>Aucune entrée pour l'instant.<br>Utilise l'onglet Saisie pour commencer.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = entries.map(e => {
+    const d = new Date(e.date + 'T12:00:00');
+    const dateStr = d.toLocaleDateString('fr-FR', { weekday:'short', day:'numeric', month:'short' });
+    const parcelles = [e.parc1, e.parc2, e.parc3].filter(Boolean).join(' · ');
+    const statusLabel = e.status === 'synced' ? '✓ Sync' : '⏳ En attente';
+
+    return `<div class="entry-card ${e.status}">
+      <span class="status ${e.status}">${statusLabel}</span>
+      <div class="date">${dateStr}</div>
+      <div class="title">${e.intervention || '—'} · ${e.outil || '—'}</div>
+      <div class="meta">${parcelles || '—'} ${e.surface ? '· ' + e.surface + ' Ha' : ''}</div>
+      ${e.culture ? `<div class="meta">Culture : ${e.culture}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  GESTION GÉNÉRIQUE DES LISTES
+// ══════════════════════════════════════════
+const LIST_CONFIG = [
+  { key: 'parcelles', label: '🌿 Parcelles',      icon: '🌿', hasSurf: true,  selectIds: ['f-parc1','f-parc2','f-parc3'] },
+  { key: 'cultures',  label: '🌾 Cultures',        icon: '🌾', hasSurf: false, selectIds: ['f-culture'] },
+  { key: 'interventions', label: '⚙️ Interventions', icon: '⚙️', hasSurf: false, selectIds: ['f-intervention'] },
+  { key: 'outils',    label: '🔧 Outils',          icon: '🔧', hasSurf: false, selectIds: ['f-outil'] },
+  { key: 'chauffeurs',label: '👤 Chauffeurs',      icon: '👤', hasSurf: false, selectIds: ['f-chauffeur'] },
+  { key: 'apports',   label: '📦 Types d\'apport', icon: '📦', hasSurf: false, selectIds: ['f-apport'] },
+  { key: 'produits',  label: '🧪 Produits',        icon: '🧪', hasSurf: false, selectIds: ['f-produit'] },
+  { key: 'unites',    label: '📏 Unités',          icon: '📏', hasSurf: false, selectIds: ['f-unite'] },
+];
+
+function getList(key) {
+  try {
+    const saved = localStorage.getItem('list_' + key);
+    if (saved) return JSON.parse(saved);
+    // Défaut depuis DATA
+    if (key === 'parcelles') return { ...DATA.surfaces };
+    return [...DATA[key]];
+  } catch(e) {
+    return key === 'parcelles' ? { ...DATA.surfaces } : [...DATA[key]];
+  }
+}
+
+function saveList(key, data) {
+  localStorage.setItem('list_' + key, JSON.stringify(data));
+  // Mettre à jour DATA et les selects
+  const cfg = LIST_CONFIG.find(c => c.key === key);
+  if (key === 'parcelles') {
+    DATA.surfaces = data;
+    DATA.parcelles = Object.keys(data);
+    cfg.selectIds.forEach(id => populate(id, DATA.parcelles));
+  } else {
+    DATA[key] = Array.isArray(data) ? data : Object.keys(data);
+    cfg.selectIds.forEach(id => populate(id, DATA[key]));
+  }
+}
+
+function addItem(key) {
+  const nomEl = document.getElementById('add-nom-' + key);
+  const surfEl = document.getElementById('add-surf-' + key);
+  const nom = nomEl.value.trim();
+  if (!nom) { showToast('⚠️ Saisis un nom !', 'error'); return; }
+
+  const list = getList(key);
+  if (key === 'parcelles') {
+    list[nom] = parseFloat(surfEl ? surfEl.value : 0) || 0;
+  } else {
+    if (!list.includes(nom)) list.push(nom);
+  }
+  saveList(key, list);
+  nomEl.value = '';
+  if (surfEl) surfEl.value = '';
+  renderListBody(key);
+  showToast('✅ Ajouté !', 'success');
+}
+
+function deleteItem(key, val) {
+  if (!confirm(`Supprimer "${val}" ?`)) return;
+  const list = getList(key);
+  if (key === 'parcelles') {
+    delete list[val];
+  } else {
+    const idx = list.indexOf(val);
+    if (idx >= 0) list.splice(idx, 1);
+  }
+  saveList(key, list);
+  renderListBody(key);
+  showToast('Supprimé', '');
+}
+
+function renderListBody(key) {
+  const cfg = LIST_CONFIG.find(c => c.key === key);
+  const body = document.getElementById('body-' + key);
+  if (!body) return;
+  const list = getList(key);
+  const items = key === 'parcelles' ? Object.keys(list) : list;
+
+  if (!items.length) {
+    body.innerHTML = '<p style="font-size:13px;color:var(--gris);text-align:center;padding:8px;">Aucun élément</p>';
+    return;
+  }
+
+  const surfInput = cfg.hasSurf
+    ? `<input type="number" id="add-surf-${key}" class="surf" placeholder="Ha" step="0.01">`
+    : '';
+
+  body.innerHTML = `
+    <div class="accord-add">
+      <input type="text" id="add-nom-${key}" placeholder="Nouveau…">
+      ${surfInput}
+      <button onclick="addItem('${key}')">+</button>
+    </div>
+    ${items.map(nom => `
+      <div class="list-item">
+        <span class="nom">${nom}</span>
+        ${cfg.hasSurf ? `<span class="surf-tag">${list[nom] || 0} Ha</span>` : ''}
+        <button class="del" onclick="deleteItem('${key}', '${nom.replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+function toggleAccord(key) {
+  const header = document.getElementById('hdr-' + key);
+  const body   = document.getElementById('body-' + key);
+  const isOpen = body.classList.contains('open');
+  // Fermer tous
+  document.querySelectorAll('.accord-body').forEach(b => b.classList.remove('open'));
+  document.querySelectorAll('.accord-header').forEach(h => h.classList.remove('open'));
+  if (!isOpen) {
+    body.classList.add('open');
+    header.classList.add('open');
+    renderListBody(key);
+  }
+}
+
+function buildAccordions() {
+  const container = document.getElementById('accordions');
+  container.innerHTML = '<div class="section-label" style="margin-top:24px">📋 Gérer les listes</div>' +
+    LIST_CONFIG.map(cfg => `
+      <div class="accord">
+        <div class="accord-header" id="hdr-${cfg.key}" onclick="toggleAccord('${cfg.key}')">
+          <span>${cfg.label}</span>
+          <span class="chevron">▼</span>
+        </div>
+        <div class="accord-body" id="body-${cfg.key}"></div>
+      </div>
+    `).join('');
+}
+
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+function saveConfig() {
+  const url = document.getElementById('cfg-url').value.trim();
+  localStorage.setItem('gasUrl', url);
+  showToast('✅ Config enregistrée !', 'success');
+}
+
+function clearData() {
+  if (confirm('Effacer tout l\'historique local ?')) {
+    localStorage.removeItem('travaux');
+    updateSyncBar();
+    renderHistorique();
+    showToast('Historique effacé', '');
+  }
+}
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function showPage(name, tabEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  if (tabEl) tabEl.classList.add('active');
+  if (name === 'historique') renderHistorique();
+}
+
+// ══════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════
+//  AUTO-SYNC AU RETOUR RÉSEAU
+// ══════════════════════════════════════════
+window.addEventListener('online', () => {
+  const pending = getEntries().filter(e => e.status === 'pending');
+  if (pending.length) {
+    showToast('📶 Réseau retrouvé — synchronisation…');
+    setTimeout(syncAll, 1000);
+  }
+});
+
+init();
+</script>
+</body>
+</html>
